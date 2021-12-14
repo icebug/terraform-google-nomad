@@ -15,8 +15,11 @@ terraform {
 resource "google_compute_region_instance_group_manager" "nomad" {
   name = "${var.cluster_name}-ig"
 
+  version {
+    instance_template = local.compute_instance_template_self_link
+  }
+
   base_instance_name = var.cluster_name
-  instance_template  = data.template_file.compute_instance_template_self_link.rendered
   region               = var.gcp_region
 
   # Restarting all Nomad servers at the same time will result in data loss and down time. Therefore, the update strategy
@@ -174,7 +177,8 @@ module "firewall_rules" {
 # ---------------------------------------------------------------------------------------------------------------------
 
 # The Google Compute Instance Group needs the self_link of the Compute Instance Template that's actually created.
-data "template_file" "compute_instance_template_self_link" {
+locals{
+  compute_instance_template_self_link = element(
   # This will return the self_link of the Compute Instance Template that is actually created. It works as follows:
   # - Make a list of 1 value or 0 values for each of google_compute_instance_template.consul_servers_public and
   #   google_compute_instance_template.consul_servers_private by adding the glob (*) notation. Terraform will complain
@@ -182,11 +186,10 @@ data "template_file" "compute_instance_template_self_link" {
   #   into a list of 1 resource and "no resource" into an empty list.
   # - Concat these lists. concat(list-of-1-value, empty-list) == list-of-1-value
   # - Take the first element of list-of-1-value
-  template = element(
-    concat(
-      google_compute_instance_template.nomad_public.*.self_link,
-      google_compute_instance_template.nomad_private.*.self_link,
-    ),
-    0,
-  )
+      concat(
+        google_compute_instance_template.nomad_public.*.self_link,
+        google_compute_instance_template.nomad_private.*.self_link,
+      ),
+      0,
+    )
 }
