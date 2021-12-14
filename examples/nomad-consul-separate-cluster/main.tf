@@ -41,7 +41,8 @@ module "nomad_servers" {
   machine_type     = var.nomad_server_cluster_machine_type
 
   source_image   = var.nomad_server_source_image
-  startup_script = data.template_file.startup_script_nomad_server.rendered
+  startup_script = local.startup_script_nomad_server
+
 
   # WARNING!
   # In a production setting, we strongly recommend only launching a Nomad Server cluster as private nodes.
@@ -58,13 +59,14 @@ module "nomad_servers" {
 }
 
 # Render the Startup Script that will run on each Nomad Instance on boot. This script will configure and start Nomad.
-data "template_file" "startup_script_nomad_server" {
-  template = file("${path.module}/startup-script-nomad-server.sh")
-
-  vars = {
-    num_servers                    = var.nomad_server_cluster_size
-    consul_server_cluster_tag_name = var.consul_server_cluster_name
-  }
+locals {
+  startup_script_nomad_server = templatefile(
+    "${path.module}/startup-script-nomad-server.sh",
+    {
+      num_servers                    = var.nomad_server_cluster_size
+      consul_server_cluster_tag_name = var.consul_server_cluster_name
+    },
+  )
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -72,10 +74,10 @@ data "template_file" "startup_script_nomad_server" {
 # ---------------------------------------------------------------------------------------------------------------------
 
 module "consul_cluster" {
-  source = "git::git@github.com:hashicorp/terraform-google-consul.git//modules/consul-cluster?ref=v0.4.0"
+  source = "git::git@github.com:icebug/terraform-google-consul.git//modules/consul-cluster?ref=6d16c96"
 
   gcp_project_id = var.gcp_project
-  gcp_region = var.gcp_region
+  gcp_region     = var.gcp_region
 
   cluster_name     = var.consul_server_cluster_name
   cluster_tag_name = var.consul_server_cluster_name
@@ -84,7 +86,8 @@ module "consul_cluster" {
   source_image = var.consul_server_source_image
   machine_type = var.consul_server_machine_type
 
-  startup_script = data.template_file.startup_script_consul.rendered
+  startup_script  = local.startup_script_consul
+  shutdown_script = file("${path.module}/shutdown-script.sh")
 
   # WARNING!
   # In a production setting, we strongly recommend only launching a Consul Server cluster as private nodes.
@@ -96,12 +99,13 @@ module "consul_cluster" {
 }
 
 # This Startup Script will run at boot configure and start Consul on the Consul Server cluster nodes
-data "template_file" "startup_script_consul" {
-  template = file("${path.module}/startup-script-consul-server.sh")
-
-  vars = {
-    consul_server_cluster_tag_name = var.consul_server_cluster_name
-  }
+locals {
+  startup_script_consul = templatefile(
+    "${path.module}/startup-script-consul-server.sh",
+    {
+      consul_server_cluster_tag_name = var.consul_server_cluster_name
+    },
+  )
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -122,7 +126,7 @@ module "nomad_clients" {
   machine_type     = var.nomad_client_machine_type
 
   source_image   = var.nomad_client_source_image
-  startup_script = data.template_file.startup_script_nomad_client.rendered
+  startup_script = local.startup_script_nomad_client
 
   # We strongly recommend setting this to "false" in a production setting. Your Nomad cluster has no reason to be
   # publicly accessible! However, for testing and demo purposes, it is more convenient to launch a publicly accessible
@@ -137,10 +141,11 @@ module "nomad_clients" {
 }
 
 # Render the Startup Script that will configure and run both Consul and Nomad in client mode.
-data "template_file" "startup_script_nomad_client" {
-  template = file("${path.module}/startup-script-nomad-client.sh")
-
-  vars = {
-    consul_server_cluster_tag_name = var.consul_server_cluster_name
-  }
+locals {
+  startup_script_nomad_client = templatefile(
+    "${path.module}/startup-script-nomad-client.sh",
+    {
+      consul_server_cluster_tag_name = var.consul_server_cluster_name
+    },
+  )
 }

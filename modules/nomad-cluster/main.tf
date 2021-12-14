@@ -15,14 +15,22 @@ terraform {
 resource "google_compute_region_instance_group_manager" "nomad" {
   name = "${var.cluster_name}-ig"
 
-  base_instance_name = var.cluster_name
-  instance_template  = data.template_file.compute_instance_template_self_link.rendered
-  region               = var.gcp_region
+  version {
+    instance_template = local.compute_instance_template_self_link
+  }
 
-  # Restarting all Nomad servers at the same time will result in data loss and down time. Therefore, the update strategy
-  # used to roll out a new GCE Instance Template must be a rolling update. But since Terraform does not yet support
-  # ROLLING_UPDATE, such updates must be manually rolled out for now.
-  update_strategy = var.instance_group_update_strategy
+  base_instance_name = var.cluster_name
+  region             = var.gcp_region
+
+  update_policy {
+    type                         = var.instance_group_update_policy_type
+    instance_redistribution_type = var.instance_group_update_policy_redistribution_type
+    minimal_action               = var.instance_group_update_policy_minimal_action
+    max_surge_fixed              = var.instance_group_update_policy_max_surge_fixed
+    max_surge_percent            = var.instance_group_update_policy_max_surge_percent
+    max_unavailable_fixed        = var.instance_group_update_policy_max_unavailable_fixed
+    max_unavailable_percent      = var.instance_group_update_policy_max_unavailable_percent
+  }
 
   target_pools = var.instance_group_target_pools
   target_size  = var.cluster_size
@@ -155,11 +163,11 @@ module "firewall_rules" {
   cluster_tag_name = var.cluster_tag_name
 
   allowed_inbound_cidr_blocks_http = var.allowed_inbound_cidr_blocks_http
-  allowed_inbound_cidr_blocks_rpc = var.allowed_inbound_cidr_blocks_rpc
+  allowed_inbound_cidr_blocks_rpc  = var.allowed_inbound_cidr_blocks_rpc
   allowed_inbound_cidr_blocks_serf = var.allowed_inbound_cidr_blocks_serf
 
   allowed_inbound_tags_http = var.allowed_inbound_tags_http
-  allowed_inbound_tags_rpc = var.allowed_inbound_tags_rpc
+  allowed_inbound_tags_rpc  = var.allowed_inbound_tags_rpc
   allowed_inbound_tags_serf = var.allowed_inbound_tags_serf
 
   http_port = 4646
@@ -174,15 +182,15 @@ module "firewall_rules" {
 # ---------------------------------------------------------------------------------------------------------------------
 
 # The Google Compute Instance Group needs the self_link of the Compute Instance Template that's actually created.
-data "template_file" "compute_instance_template_self_link" {
-  # This will return the self_link of the Compute Instance Template that is actually created. It works as follows:
-  # - Make a list of 1 value or 0 values for each of google_compute_instance_template.consul_servers_public and
-  #   google_compute_instance_template.consul_servers_private by adding the glob (*) notation. Terraform will complain
-  #   if we directly reference a resource property that doesn't exist, but it will permit us to turn a single resource
-  #   into a list of 1 resource and "no resource" into an empty list.
-  # - Concat these lists. concat(list-of-1-value, empty-list) == list-of-1-value
-  # - Take the first element of list-of-1-value
-  template = element(
+locals {
+  compute_instance_template_self_link = element(
+    # This will return the self_link of the Compute Instance Template that is actually created. It works as follows:
+    # - Make a list of 1 value or 0 values for each of google_compute_instance_template.consul_servers_public and
+    #   google_compute_instance_template.consul_servers_private by adding the glob (*) notation. Terraform will complain
+    #   if we directly reference a resource property that doesn't exist, but it will permit us to turn a single resource
+    #   into a list of 1 resource and "no resource" into an empty list.
+    # - Concat these lists. concat(list-of-1-value, empty-list) == list-of-1-value
+    # - Take the first element of list-of-1-value
     concat(
       google_compute_instance_template.nomad_public.*.self_link,
       google_compute_instance_template.nomad_private.*.self_link,
