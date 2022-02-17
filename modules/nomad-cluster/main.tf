@@ -19,8 +19,9 @@ resource "google_compute_region_instance_group_manager" "nomad" {
     instance_template = local.compute_instance_template_self_link
   }
 
-  base_instance_name = var.cluster_name
-  region             = var.gcp_region
+  base_instance_name        = var.cluster_name
+  region                    = var.gcp_region
+  distribution_policy_zones = var.gcp_zones
 
   update_policy {
     type                         = var.instance_group_update_policy_type
