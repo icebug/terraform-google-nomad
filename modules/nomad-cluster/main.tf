@@ -90,6 +90,7 @@ resource "google_compute_instance_template" "nomad_public" {
     scopes = [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/compute.readonly",
+      "storage-ro",
     ]
   }
 
@@ -142,6 +143,7 @@ resource "google_compute_instance_template" "nomad_private" {
     scopes = [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/compute.readonly",
+      "storage-ro",
     ]
   }
 

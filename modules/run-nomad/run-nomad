@@ -182,7 +182,7 @@ EOF
 
   log_info "Creating default Nomad config file in $config_path"
   cat > "$config_path" <<EOF
-datacenter = "$zone"
+datacenter = "$instance_region"
 name       = "$instance_name"
 region     = "$instance_region"
 bind_addr  = "0.0.0.0"
