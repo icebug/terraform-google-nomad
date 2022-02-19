@@ -144,7 +144,6 @@ resource "google_compute_instance_template" "nomad_private" {
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/compute.readonly",
       "storage-ro",
-      "cloud-platform",
     ]
   }
 

@@ -175,6 +175,10 @@ EOF
     client_config=$(cat <<EOF
 client {
   enabled = true
+
+  options {
+    "docker.auth.config" = "/etc/docker/config.json"
+  }
 }
 EOF
 )
