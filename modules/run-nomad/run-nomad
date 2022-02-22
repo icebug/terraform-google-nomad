@@ -175,6 +175,10 @@ EOF
     client_config=$(cat <<EOF
 client {
   enabled = true
+
+  options {
+    "docker.auth.config" = "/etc/docker/config.json"
+  }
 }
 EOF
 )
@@ -182,7 +186,7 @@ EOF
 
   log_info "Creating default Nomad config file in $config_path"
   cat > "$config_path" <<EOF
-datacenter = "$zone"
+datacenter = "$instance_region"
 name       = "$instance_name"
 region     = "$instance_region"
 bind_addr  = "0.0.0.0"

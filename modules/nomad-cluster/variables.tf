@@ -43,6 +43,12 @@ variable "startup_script" {
 # These parameters have reasonable defaults.
 # ---------------------------------------------------------------------------------------------------------------------
 
+variable "gcp_zones" {
+  description = "The zones in which all GCP resources will be launched. Defaults to all zones in the specified region."
+  type        = set(string)
+  default     = null
+}
+
 variable "instance_group_target_pools" {
   description = "To use a Load Balancer with the Consul cluster, you must populate this value. Specifically, this is the list of Target Pool URLs to which new Compute Instances in the Instance Group created by this module will be added. Note that updating the Target Pools attribute does not affect existing Compute Instances."
   type        = list(string)
